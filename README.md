@@ -1,83 +1,57 @@
-# Cyandle: Cryptocurrency Predictive Foundation Model
+# cyandle: cryptocurrency predictive foundation model
 
-A research-focused Transformer-based cryptocurrency time-series forecasting model built from scratch.
+hey there! cyandle (short for crypto foundation model) is a transformer-based model i built from the ground up to predict cryptocurrency market movements. no pretrained weights, no shortcuts - just raw market patterns learned from historical data.
 
-## Overview
+## what this thing does
 
-Cyandle (Crypto Foundation Model) is a custom causal Transformer that predicts:
-- Future market direction
-- Cumulative log returns
-- Return distribution quantiles (uncertainty)
+the model predicts three things for each time horizon:
 
-## Architecture
+- **direction**: the probability that price will go up
+- **returns**: how much it'll move (in log returns)
+- **quantiles**: uncertainty bands (10th, 50th, 90th percentiles)
 
-**CryptoFormer** - Custom Transformer architecture:
-- 4 Transformer layers (configurable)
-- 128 hidden dimensions (small model: 128, medium: 256)
+you can predict from 5 minutes all the way to 7 days ahead.
+
+## the architecture
+
+**cryptformer** is basically a standard transformer with some crypto-specific tweaks:
+
+- 4 layers by default (configurable)
+- 128 hidden dimensions for the small version
 - 4 attention heads
-- Causal self-attention (no future information leakage)
-- RMSNorm / LayerNorm
-- GELU activation
+- fully causal - it only looks at past data, never future
+- rmsnorm and gelu activations
+- about 640k parameters for the small model
 
-## Project Structure
+## project structure
 
 ```
 cyandle/
-├── configs/           # Model configurations
-│   ├── tiny.yaml      # CPU test config (~1M params)
-│   ├── small.yaml     # Development config (~2-3M params)
-│   └── medium.yaml    # Full training config (~5-8M params)
-│
-├── data/              # Data infrastructure
-│   ├── raw/           # Raw downloads from Binance
-│   └── downloader.py  # Binance Vision API client
-├── model/             # Model components
-│   ├── embeddings.py  # Feature, positional, asset embeddings
-│   ├── attention.py   # Causal self-attention
-│   ├── transformer.py  # Transformer blocks
-│   ├── forecasting_heads.py # Multi-horizon prediction heads
-│   └── cryptoformer.py # Main model class
-│
-├── training/          # Training utilities
-│   ├── trainer.py     # Training loop with AMP
-│   ├── losses.py      # Multi-task loss functions
-│   ├── optimizer.py   # Optimizer & scheduler setup
-│   └── checkpoint.py  # Checkpoint management
-│
-├── evaluation/        # Evaluation tools
-│   ├── metrics.py     # Evaluation metrics
-│   └── benchmarks.py  # Baseline models
-│
-├── tests/             # Unit tests
-│   └── test_model.py
-│
-├── scripts/           # CLI scripts
-│   └── train.py
-│
+├── configs/           # model configs: tiny/small/medium
+├── data/              # downloader, features, dataset, validator
+├── model/             # embeddings, attention, transformer, heads
+├── training/          # trainer, losses, optimizer, checkpoint
+├── evaluation/        # metrics, benchmarks
+├── tests/             # unit tests
+├── scripts/           # train.py, etc.
 └── README.md
 ```
 
-## Installation
+## quick setup
+
+just install the basics:
 
 ```bash
 pip install torch pandas numpy pyarrow scikit-learn lightgbm
 ```
 
-## Quick Start
+## trying it out
 
-### Test the model (CPU)
-
-```bash
-python scripts/train.py --data data/sample.parquet --dry-run
-```
-
-### Train a model
+first, make some fake data:
 
 ```bash
-# Generate sample data first
 python -c "
-import pandas as pd
-import numpy as np
+import pandas as pd, numpy as np
 dates = pd.date_range('2024-01-01', periods=1000, freq='5min')
 df = pd.DataFrame({
     'open_time': dates,
@@ -89,69 +63,81 @@ df = pd.DataFrame({
 })
 df.to_parquet('sample.parquet')
 "
-
-python scripts/train.py --data sample.parquet
 ```
 
-## Model Features
+then test the model:
 
-### Input Features
-- Price returns (open, high, low, close relative to previous close)
-- Log returns
-- Candle body, wicks, range
-- Volume features (log volume, relative volume)
-- Volatility features (realized volatility)
-- Temporal features (hour, day-of-week with cyclical encoding)
-
-### Prediction Horizons
-- 5 min (1 candle) → 7 days (2016 candles)
-
-### Output
-For each horizon:
-- `direction`: P(returns > 0) via sigmoid
-- `returns`: Expected cumulative log returns
-- `quantiles`: 10th, 50th, 90th percentiles for uncertainty
-
-## Training Objectives
-
-Multi-task loss:
-```
-L = λ1 * L_return + λ2 * L_direction + λ3 * L_quantile
-
-where:
-- L_return: Huber loss (robust to outliers)
-- L_direction: Binary cross-entropy with logits
-- L_quantile: Pinball loss
+```bash
+python scripts/train.py --data sample.parquet --dry-run
 ```
 
-## Key Principles
+the dry-run flag just tests forward/backward pass without actually training.
 
-1. **Causal**: Only uses past data for predictions
-2. **Multi-asset**: Trains across multiple cryptocurrencies
-3. **Multi-horizon**: Predicts multiple time frames simultaneously
-4. **Uncertainty**: Provides quantile predictions
-5. **Reproducible**: All experiments tracked with config and checkpoints
+## what goes in, what comes out
 
-## Baseline Models
+**input features** (30 total):
+- returns based on open/high/low/close vs previous close
+- candle body, wicks, range
+- volume metrics
+- volatility (realized std of returns)
+- time features (hour of day, day of week - cyclically encoded)
 
-Compared against:
-- Zero-return predictor
-- Historical mean
-- Momentum strategy
-- LightGBM
+**prediction horizons**:
+- 1, 3, 6, 12, 48, 144, 288, 2016 candles ahead
+- that's 5m, 15m, 30m, 1h, 4h, 12h, 24h, 7d
 
-## Development Milestones
+**output per horizon**:
+- direction: 0-1 probability price goes up
+- returns: expected cumulative log return
+- quantiles: uncertainty estimates
 
-- [x] M0: Data downloader infrastructure
-- [x] M1: Data validation and quality checks
-- [x] M2: Feature engineering pipeline
-- [x] M3: Sliding window dataset
-- [x] M4: Transformer architecture from scratch
-- [x] M5: Training infrastructure
-- [ ] M6: Evaluation benchmarks
-- [ ] M7: Walk-forward validation
-- [ ] M8: Full training and evaluation
+## training setup
 
-## License
+multi-task learning with a weighted sum:
 
-MIT - Research purposes
+```
+loss = λ1 * return_loss + λ2 * direction_loss + λ3 * quantile_loss
+```
+
+- return_loss: huber (handles outliers well)
+- direction_loss: binary cross-entropy
+- quantile_loss: pinball loss
+
+default weights are 1.0, 1.0, 0.5.
+
+## baseline comparison
+
+before claiming the transformer is useful, we compare against:
+- always predict zero return
+- historical average
+- momentum strategy
+- lightgbm
+
+the model has to beat these to be worth using.
+
+## the commits
+
+this repo is built commit-by-commit:
+
+- m0: binance data downloader
+- m1: data validation
+- m2: feature engineering
+- m3: sliding window dataset
+- m4: transformer from scratch
+- m5: training infrastructure
+
+each commit represents a working piece you can test independently.
+
+## getting started locally
+
+if you want to run a quick test:
+
+1. download some btcusdt data from binance
+2. run `scripts/train.py` with your data
+3. check the `experiments/` folder for outputs
+
+for full training you'll want a gpu with 16gb+ vram, but the tiny model works on cpu for testing.
+
+## license
+
+mit license - do what you want, just don't blame me if it loses money :)
