@@ -1,5 +1,13 @@
 """
-Causal attention mechanism for CryptoFormer - M4
+Causal attention mechanism for CryptoFormer.
+
+Implements multi-head self-attention with proper causal masking to prevent
+future information leakage in time series predictions.
+
+Key features:
+- Lower-triangular causal mask
+- Optional Flash Attention for efficiency
+- Key-value caching for inference
 """
 import torch
 import torch.nn as nn
@@ -8,7 +16,12 @@ from typing import Optional
 
 
 class CausalSelfAttention(nn.Module):
-    """Multi-head causal self-attention with proper masking."""
+    """
+    Multi-head causal self-attention with proper masking.
+    
+    Only attends to positions <= current position (autoregressive).
+    Uses scaled dot-product attention with dropout regularization.
+    """
     
     def __init__(
         self,
@@ -52,6 +65,16 @@ class CausalSelfAttention(nn.Module):
         return mask.unsqueeze(0).unsqueeze(0)
     
     def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        """
+        Forward pass for causal self-attention.
+        
+        Args:
+            x: Input tensor of shape (batch, seq_len, hidden_dim)
+            mask: Optional mask tensor (not used for causal attention)
+        
+        Returns:
+            Tensor of shape (batch, seq_len, hidden_dim)
+        """
         batch_size, seq_len, _ = x.shape
         
         q = self.q_proj(x)
