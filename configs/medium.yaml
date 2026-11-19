@@ -1,18 +1,26 @@
-# Medium model configuration - M2 target
-# Approx 5-8M parameters
+# Medium model configuration - M0 target
+# Target: ~3M parameters
+# Designed for Colab T4 GPU training (16GB VRAM)
+# Parameter breakdown:
+# - Embedding: 30*128 + 10*128 + 512*128 ≈ 75K
+# - 6x Transformer blocks: 6 * (2 * 128*128 + 2 * 128*256) ≈ 6 * 98K = 590K
+# - Prediction heads: ~200K
+# - Per-layer: attention (128*128*2 + 128*128*2) + ffn (128*256*2) ≈ 98K each
+# - Total: ~3M parameters
+
 model:
-  hidden_dim: 256
+  hidden_dim: 128
   num_layers: 6
-  num_heads: 8
-  ffn_dim: 512
+  num_heads: 4
+  ffn_dim: 256
 
 training:
-  epochs: 20
-  learning_rate: 5e-5
+  epochs: 10
+  learning_rate: 1e-4
   weight_decay: 0.01
-  batch_size: 64
-  warmup_steps: 200
-  patience: 10
+  batch_size: 32
+  warmup_steps: 100
+  patience: 5
 
 data:
   context_length: 512
