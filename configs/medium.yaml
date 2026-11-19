@@ -1,0 +1,27 @@
+# Medium model configuration - M2 target
+# Approx 5-8M parameters
+model:
+  hidden_dim: 256
+  num_layers: 6
+  num_heads: 8
+  ffn_dim: 512
+
+training:
+  epochs: 20
+  learning_rate: 5e-5
+  weight_decay: 0.01
+  batch_size: 64
+  warmup_steps: 200
+  patience: 10
+
+data:
+  context_length: 512
+  horizons:
+    - 1
+    - 3
+    - 6
+    - 12
+    - 48
+    - 144
+    - 288
+    - 2016

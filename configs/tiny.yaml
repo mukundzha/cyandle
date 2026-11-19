@@ -1,0 +1,26 @@
+# Tiny model configuration - for CPU testing and debugging
+model:
+  hidden_dim: 64
+  num_layers: 2
+  num_heads: 2
+  ffn_dim: 128
+
+training:
+  epochs: 5
+  learning_rate: 1e-3
+  weight_decay: 0.01
+  batch_size: 16
+  warmup_steps: 50
+  patience: 3
+
+data:
+  context_length: 256
+  horizons:
+    - 1
+    - 3
+    - 6
+    - 12
+    - 48
+    - 144
+    - 288
+    - 2016
