@@ -1,15 +1,25 @@
 """
-Multi-horizon forecasting heads for CryptoFormer - M4
+Multi-horizon forecasting heads for CryptoFormer.
+
+Provides three prediction heads for multi-task learning:
+1. Direction head: P(returns > 0) via sigmoid
+2. Return head: Expected cumulative log returns
+3. Quantile head: Uncertainty estimation via quantiles
+
+Uses pinball loss for quantile regression to ensure valid probabilistic forecasts.
 """
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import List, Optional
-import math
 
 
 class DirectionHead(nn.Module):
-    """Predicts direction probability P(r_h > 0) using sigmoid."""
+    """
+    Predicts direction probability using sigmoid.
+    
+    Output: P(r_h > 0) - probability that return at horizon h is positive.
+    """
     
     def __init__(self, hidden_dim: int, num_horizons: int):
         super().__init__()
@@ -27,7 +37,11 @@ class DirectionHead(nn.Module):
 
 
 class ReturnHead(nn.Module):
-    """Predicts expected cumulative log returns."""
+    """
+    Predicts expected cumulative log returns.
+    
+    Output: E[r_h] - expected sum of log returns from t to t+h.
+    """
     
     def __init__(self, hidden_dim: int, num_horizons: int):
         super().__init__()
@@ -44,7 +58,13 @@ class ReturnHead(nn.Module):
 
 
 class QuantileHead(nn.Module):
-    """Predicts return quantiles for uncertainty estimation."""
+    """
+    Predicts return quantiles for uncertainty estimation.
+    
+    Output: [Q_0.1(r_h), Q_0.5(r_h), Q_0.9(r_h)] - 10th, 50th, 90th percentiles.
+    
+    Enables prediction interval coverage assessment and risk management.
+    """
     
     def __init__(self, hidden_dim: int, num_horizons: int, quantiles: List[float] = [0.1, 0.5, 0.9]):
         super().__init__()
@@ -92,7 +112,14 @@ class MultiHeadPrediction(nn.Module):
 
 
 def quantile_loss(predictions: torch.Tensor, targets: torch.Tensor, quantiles: List[float]) -> torch.Tensor:
-    """Compute pinball loss for quantile regression."""
+    """
+    Compute pinball loss for quantile regression.
+    
+    The pinball loss is defined as:
+    L_q(y, ŷ) = max(q(y - ŷ), (q-1)(ŷ - y))
+    
+    This encourages the predicted quantiles to match the true quantile function.
+    """
     batch_size, num_horizons, num_quantiles = predictions.shape
     targets_expanded = targets.unsqueeze(-1).expand(-1, -1, num_quantiles)
     errors = targets_expanded - predictions
