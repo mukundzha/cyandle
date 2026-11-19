@@ -133,19 +133,19 @@ class ForecastLoss(nn.Module):
         logits = torch.logit(predictions['direction'].clamp(min=1e-7, max=1-1e-7))
         direction_loss = F.binary_cross_entropy_with_logits(logits, targets['directions'])
         
-        quantile_loss = quantile_loss(predictions['quantiles'], targets['returns'], self.quantiles)
+        q_loss = self.quantile_loss(predictions['quantiles'], targets['returns'], self.quantiles)
         
         total_loss = (
             self.return_weight * return_loss +
             self.direction_weight * direction_loss +
-            self.quantile_weight * quantile_loss
+            self.quantile_weight * q_loss
         )
         
         return {
             'total_loss': total_loss,
             'return_loss': return_loss,
             'direction_loss': direction_loss,
-            'quantile_loss': quantile_loss
+            'quantile_loss': q_loss
         }
 
 

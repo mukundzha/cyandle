@@ -48,9 +48,6 @@ class CryptoFormer(nn.Module):
         self.num_assets = num_assets
         self.num_horizons = num_horizons
         
-        params = self._count_parameters()
-        logger.info(f"CryptoFormer: {params:,} parameters")
-        
         self.embedding = CryptoEmbedding(
             feature_dim=feature_dim,
             hidden_dim=hidden_dim,
@@ -182,7 +179,7 @@ def create_tiny_model(num_assets: int = 10, horizons: Optional[List[int]] = None
     )
 
 
-def create_small_model(num_assets: int = 10, horizons: Optional[List[int]] = None) -> CryptoFormer:
+def create_small_model(num_assets: int = 10, horizons: Optional[List[int]] = None, feature_dim: int = 30) -> CryptoFormer:
     if horizons is None:
         horizons = [1, 3, 6, 12, 48, 144, 288, 2016]
     elif isinstance(horizons, int):
@@ -194,7 +191,7 @@ def create_small_model(num_assets: int = 10, horizons: Optional[List[int]] = Non
         ffn_dim=256,
         num_assets=num_assets,
         num_horizons=len(horizons),
-        feature_dim=14
+        feature_dim=feature_dim
     )
 
 
