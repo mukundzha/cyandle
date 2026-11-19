@@ -14,12 +14,6 @@ python -c "import pandas as pd, numpy as np; d=pd.date_range('2024-01-01',100); 
 python scripts/train.py --data s.parquet --dry-run
 ```
 
-## model sizes
-
-- tiny: ~60k params (cpu testing)
-- small: ~640k params (default)
-- medium: ~3.5m params
-
 ## structure
 
 ```
