@@ -195,7 +195,7 @@ def create_small_model(num_assets: int = 10, horizons: Optional[List[int]] = Non
     )
 
 
-def create_medium_model(num_assets: int = 10, horizons: Optional[List[int]] = None) -> CryptoFormer:
+def create_medium_model(num_assets: int = 10, horizons: Optional[List[int]] = None, feature_dim: int = 30) -> CryptoFormer:
     if horizons is None:
         horizons = [1, 3, 6, 12, 48, 144, 288, 2016]
     elif isinstance(horizons, int):
@@ -206,7 +206,8 @@ def create_medium_model(num_assets: int = 10, horizons: Optional[List[int]] = No
         num_heads=8,
         ffn_dim=512,
         num_assets=num_assets,
-        num_horizons=len(horizons)
+        num_horizons=len(horizons),
+        feature_dim=feature_dim
     )
 
 
