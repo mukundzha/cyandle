@@ -1,0 +1,1 @@
+"""Tests for Cyandle cryptocurrency predictive model."""
