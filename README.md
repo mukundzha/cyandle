@@ -34,4 +34,10 @@ cyandle/
 
 ## license
 
-mit
+mit license.
+
+**do what the hell you want with it** - but if you make money from it, i want a cut. if it blows up the stock market, not my problem.
+
+**disclaimer:** this is for research purposes only. dont trade with real money based on this model. if you do, youre dumb.
+
+**fun fact:** this readme is shorter than most crypto twitter posts.
