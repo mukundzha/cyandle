@@ -201,8 +201,25 @@ def create_medium_model(num_assets: int = 10, horizons: Optional[List[int]] = No
     elif isinstance(horizons, int):
         horizons = list(range(1, horizons + 1))
     return CryptoFormer(
-        hidden_dim=256,
+        hidden_dim=128,
         num_layers=6,
+        num_heads=4,
+        ffn_dim=256,
+        num_assets=num_assets,
+        num_horizons=len(horizons),
+        feature_dim=feature_dim
+    )
+
+
+def create_large_model(num_assets: int = 10, horizons: Optional[List[int]] = None, feature_dim: int = 30) -> CryptoFormer:
+    """Large model: ~12M parameters for production training."""
+    if horizons is None:
+        horizons = [1, 3, 6, 12, 48, 144, 288, 2016]
+    elif isinstance(horizons, int):
+        horizons = list(range(1, horizons + 1))
+    return CryptoFormer(
+        hidden_dim=256,
+        num_layers=8,
         num_heads=8,
         ffn_dim=512,
         num_assets=num_assets,

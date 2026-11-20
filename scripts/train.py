@@ -68,6 +68,8 @@ def main():
     parser.add_argument('--lr', type=float, default=None, help='Override learning rate')
     parser.add_argument('--gradient-accumulation', type=int, default=1, 
                        help='Gradient accumulation steps for large batch effective size')
+    parser.add_argument('--num-assets', type=int, default=100, 
+                       help='Number of assets to support in embedding')
     
     args = parser.parse_args()
     
@@ -107,11 +109,13 @@ def main():
         'hour_sin', 'hour_cos', 'dow_sin', 'dow_cos'
     ]
     
-    available_features = [c for c in feature_cols if c in df.columns]
+    available_features = [c for c in feature_cols if c in df.columns and c != 'open_time']
     if len(available_features) < len(feature_cols):
         import warnings
         warnings.warn(f"Some features not available: {set(feature_cols) - set(available_features)}")
-        available_features = list(df.select_dtypes(include=['float64', 'int64']).columns)
+        # Get all numeric columns except open_time
+        numeric_cols = df.select_dtypes(include=['float64', 'int64', 'uint64']).columns.tolist()
+        available_features = [c for c in numeric_cols if c != 'open_time']
     
     print(f"Using {len(available_features)} features")
     
@@ -142,13 +146,16 @@ def main():
     
     print(f"Datasets: train={len(train_dataset)}, val={len(val_dataset)}, test={len(test_dataset)}")
     
-    # Create model
+    # Create model with auto-detected feature count
+    feature_dim = len([c for c in available_features if c != 'open_time'])
+    # Use 100 as max assets for embedding table (sufficient for crypto market)
+    model_num_assets = max(args.num_assets, 100)
     if args.model == 'small':
-        model = create_small_model(num_assets=num_assets)
+        model = create_small_model(num_assets=model_num_assets, feature_dim=feature_dim)
     elif args.model == 'large':
-        model = create_large_model(num_assets=num_assets)
+        model = create_large_model(num_assets=model_num_assets, feature_dim=feature_dim)
     else:  # medium (5M params)
-        model = create_medium_model(num_assets=num_assets)
+        model = create_medium_model(num_assets=model_num_assets, feature_dim=feature_dim)
     
     num_params = count_parameters(model)
     print(f"Model parameters: {num_params:,} (~{num_params/1e6:.1f}M)")

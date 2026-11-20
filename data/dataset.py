@@ -109,7 +109,7 @@ class CryptoDataset(Dataset):
             'returns': torch.FloatTensor(returns),
             'directions': torch.FloatTensor(directions),
             'valid_mask': torch.BoolTensor(valid_masks),
-            'asset': torch.tensor(hash(self.asset) % 10000, dtype=torch.long),
+            'asset': torch.tensor(hash(self.asset) % 100, dtype=torch.long),
             'timestamp_idx': torch.tensor(sample['idx'], dtype=torch.long)
         }
     
