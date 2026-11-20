@@ -47,7 +47,6 @@ class FeatureEngineer:
     def compute_volatility_features(self) -> pd.DataFrame:
         """Compute volatility features."""
         df = self.df.copy()
-        df['log_return'] = np.log(df['close'] / df['close'].shift(1))
         df['rv_5'] = df['log_return'].rolling(5).std()
         df['rv_20'] = df['log_return'].rolling(20).std()
         df['rv_50'] = df['log_return'].rolling(50).std()
@@ -55,25 +54,27 @@ class FeatureEngineer:
     
     def compute_temporal_features(self) -> pd.DataFrame:
         """Compute temporal features."""
+        import math
         df = self.df.copy()
         df['hour'] = df['open_time'].dt.hour
-        df['day_of_week'] = df['open_time'].dt.dayofweek
-        df['hour_sin'] = np.sin(2 * np.pi * df['hour'] / 24)
-        df['hour_cos'] = np.cos(2 * np.pi * df['hour'] / 24)
-        df['dow_sin'] = np.sin(2 * np.pi * df['day_of_week'] / 7)
-        df['dow_cos'] = np.cos(2 * np.pi * df['day_of_week'] / 7)
+        df['dow'] = df['open_time'].dt.dayofweek
+        df['hour_sin'] = np.sin(2 * math.pi * df['hour'] / 24)
+        df['hour_cos'] = np.cos(2 * math.pi * df['hour'] / 24)
+        df['dow_sin'] = np.sin(2 * math.pi * df['dow'] / 7)
+        df['dow_cos'] = np.cos(2 * math.pi * df['dow'] / 7)
         return df
     
     def add_all_features(self) -> pd.DataFrame:
         """Add all engineered features."""
         logger.info("Starting feature engineering...")
         
-        df = self.compute_returns()
-        df = self.compute_candle_features(df)
-        df = self.compute_volume_features(df)
-        df = self.compute_volatility_features(df)
-        df = self.compute_temporal_features()
+        self.df = self.compute_returns()
+        self.df = self.compute_candle_features()
+        self.df = self.compute_volume_features()
+        self.df = self.compute_volatility_features()
+        self.df = self.compute_temporal_features()
         
+        df = self.df.copy()
         initial_len = len(df)
         df = df.dropna().reset_index(drop=True)
         dropped = initial_len - len(df)
@@ -82,24 +83,6 @@ class FeatureEngineer:
             logger.info(f"Dropped {dropped} rows with NaN values")
         
         logger.info(f"Final features: {len(df.columns)} columns, {len(df)} rows")
-        return df
-    
-    def compute_returns(self) -> pd.DataFrame:
-        """Compute various return features."""
-        df = self.df.copy()
-        df['log_return'] = np.log(df['close'] / df['close'].shift(1))
-        df['open_return'] = np.log(df['open'] / df['close'].shift(1))
-        df['high_return'] = np.log(df['high'] / df['close'].shift(1))
-        df['low_return'] = np.log(df['low'] / df['close'].shift(1))
-        return df
-    
-    def compute_candle_features(self) -> pd.DataFrame:
-        """Compute candle-specific features."""
-        df = self.df.copy()
-        df['candle_body'] = df['close'] - df['open']
-        df['upper_wick'] = df['high'] - df[['open', 'close']].max(axis=1)
-        df['lower_wick'] = df[['open', 'close']].min(axis=1) - df['low']
-        df['candle_range'] = df['high'] - df['low']
         return df
 
 
